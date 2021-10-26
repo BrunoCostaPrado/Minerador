@@ -1,30 +1,30 @@
 from hashlib import sha256
-MAX_NONCE = 100000000000
+import time
 
-def SHA256(text):
-    return sha256(text.encode("ascii")).hexdigest()
 
-def mine(block_number, transactions, previous_hash, prefix_zeros):
-    prefix_str = '0'*prefix_zeros
-    for nonce in range(MAX_NONCE):
-        text = str(block_number) + transactions + previous_hash + str(nonce)
-        new_hash = SHA256(text)
-        if new_hash.startswith(prefix_str):
-            print(f"Yay! Minerou um total de nonce:{nonce}")
-            return new_hash
+def aplicar_sha256(texto):
+    return sha256(texto.encode("ascii")).hexdigest()
 
-    raise BaseException(f"Não achei nada depois de  {MAX_NONCE} vezes")
 
-if __name__=='__main__':
-    transactions='''
-    Bruno->Marcelo->20,
-    Fernanda->Iroh->45
-    '''
-    difficulty=4 
-    import time
-    start = time.time()
-    print("start mining")
-    new_hash = mine(5,transactions,'0000000xa036944e29568d0cff17edbe038f81208fecf9a66be9a2b8321c6ec7', difficulty)
-    total_time = str((time.time() - start))
-    print(f"Terminou. A minereção levou: {total_time} segundos")
-    print(new_hash)
+def minerar(num_bloco, transacoes, hash_anterior, qtde_zeros):
+    nonce = 0
+    while True:
+        texto = str(num_bloco) + transacoes + hash_anterior + str(nonce)
+        meu_hash = aplicar_sha256(texto)
+        if meu_hash.startswith("0" * qtde_zeros):
+            return nonce, meu_hash
+        nonce += 1
+
+
+if __name__ == "__main__":
+    num_bloco = 15
+    transacoes = """
+    Lira->Alon->10
+    Alon->Joao->5
+    Joao->Amanda->11"""
+    qtde_zeros = 6
+    hash_anterior = "abc"
+    inicio = time.time()
+    resultado = minerar(num_bloco, transacoes, hash_anterior, qtde_zeros)
+    print(resultado)
+    print(time.time() - inicio)
