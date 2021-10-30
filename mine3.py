@@ -1,21 +1,3 @@
-#!/usr/bin/python
-#
-# Copyright 2011 Jeff Garzik
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program; see the file COPYING.  If not, write to
-# the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
-#
-
 import time
 import json
 import pprint
@@ -57,18 +39,18 @@ class BitcoinRPC:
 
         resp = self.conn.getresponse()
         if resp is None:
-            print( "JSON-RPC: no response")
+            print("JSON-RPC: no response")
             return None
 
         body = resp.read()
         resp_obj = json.loads(body)
         if resp_obj is None:
-            print ("JSON-RPC: cannot JSON-decode body")
+            print("JSON-RPC: cannot JSON-decode body")
             return None
         if 'error' in resp_obj and resp_obj['error'] != None:
             return resp_obj['error']
         if 'result' not in resp_obj:
-            print ("JSON-RPC: no result in object")
+            print("JSON-RPC: no result in object")
             return None
 
         return resp_obj['result']
@@ -111,56 +93,41 @@ class Miner:
         self.max_nonce = MAX_NONCE
 
     def work(self, datastr, targetstr):
-        # decode work data hex string to binary
         static_data = datastr.decode('hex')
         static_data = bufreverse(static_data)
 
-        # the first 76b of 80b do not change
         blk_hdr = static_data[:76]
 
-        # decode 256-bit target value
         targetbin = targetstr.decode('hex')
-        targetbin = targetbin[::-1]  # byte-swap and dword-swap
+        targetbin = targetbin[::-1]
         targetbin_str = targetbin.encode('hex')
         target = long(targetbin_str, 16)
-
-        # pre-hash first 76b of block header
         static_hash = hashlib.sha256()
         static_hash.update(blk_hdr)
-
         for nonce in xrange(self.max_nonce):
-
-            # encode 32-bit nonce value
             nonce_bin = struct.pack("<I", nonce)
-
-            # hash final 4b, the nonce value
             hash1_o = static_hash.copy()
             hash1_o.update(nonce_bin)
             hash1 = hash1_o.digest()
 
-            # sha256 hash of sha256 hash
             hash_o = hashlib.sha256()
             hash_o.update(hash1)
             hash = hash_o.digest()
-
-            # quick test for winning solution: high 32 bits zero?
             if hash[-4:] != '\0\0\0\0':
                 continue
-
-            # convert binary hash to 256-bit Python long
             hash = bufreverse(hash)
             hash = wordreverse(hash)
 
             hash_str = hash.encode('hex')
             l = long(hash_str, 16)
 
-            # proof-of-work test:  hash < target
+            
             if l < target:
                 print time.asctime(), "PROOF-OF-WORK found: %064x" % (l,)
                 return (nonce + 1, nonce_bin)
             else:
                 print time.asctime(), "PROOF-OF-WORK false positive %064x" % (l,)
-#				return (nonce + 1, nonce_bin)
+
 
         return (nonce + 1, None)
 
@@ -219,17 +186,14 @@ def miner_thread(id):
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print ("Usage: pyminer.py CONFIG-FILE")
+        print("Usage: pyminer.py CONFIG-FILE")
         sys.exit(1)
 
     f = open(sys.argv[1])
     for line in f:
-        # skip comment lines
         m = re.search('^\s*#', line)
         if m:
             continue
-
-        # parse key=value lines
         m = re.search('^(\w+)\s*=\s*(\S.*)$', line)
         if m is None:
             continue
@@ -247,7 +211,7 @@ if __name__ == '__main__':
     if 'scantime' not in settings:
         settings['scantime'] = 30L
     if 'rpcuser' not in settings or 'rpcpass' not in settings:
-        print ("Missing username and/or password in cfg file")
+        print("Missing username and/or password in cfg file")
         sys.exit(1)
 
     settings['port'] = int(settings['port'])
@@ -260,7 +224,7 @@ if __name__ == '__main__':
         p = Process(target=miner_thread, args=(thr_id,))
         p.start()
         thr_list.append(p)
-        time.sleep(1)			# stagger threads
+        time.sleep(1)			
 
     print settings['threads'], "mining threads started"
 
